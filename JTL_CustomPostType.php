@@ -95,13 +95,15 @@ class JTL_CustomPostType {
      */
     public $show_ui = true;
 
+
+   //////////////// private /////////////////
+
     /**
      * All the fields this custom post type has
      * @var array[JTL_Field]
      */
-    public $fields = array();
-
-   //////////////// private /////////////////
+    private $fields = array();
+    private $field_map = array();
 
     private $labels = array();
     private $was_registered = false;
@@ -128,6 +130,9 @@ class JTL_CustomPostType {
      */
     public function register() {
         add_action('init', array(&$this, 'register_actual'));
+        foreach ($this->fields as $field) {
+            $field->register_hooks();
+        }
     }
 
     public function register_actual() {
@@ -170,6 +175,49 @@ class JTL_CustomPostType {
     }
 
     /**
+     * Add a new field to this custom post type.
+     * You may supply an array of fields to add, or just one JTL_Field
+     * @param $field JTL_Field
+     * @throws Exception
+     */
+    public function add_field($field) {
+        // support bulk adding fields in an array
+        if (is_array($field)) {
+            foreach ($field as $singular_field) {
+                $this->add_field($singular_field);
+            }
+        } else if (is_subclass_of($field, 'JTL_Field')) {
+            // no duplicate field names please
+            if (isset($this->field_map[$field->name]))
+                throw new Exception('Duplicate field error');
+
+            // some fields use field->parent for things
+            $field->set_parent($this);
+
+            // actually add the field
+            $this->fields[] = $field;
+            $this->field_map[ $field->name ] = $field;
+        } else {
+            throw new  Exception('Type Error: Not of type JTL_Field');
+        }
+    }
+
+    /**
+     * @param $field_name
+     * @return JTL_Field
+     */
+    public function get_field($field_name) {
+        return $this->field_map[$field_name];
+    }
+
+    public function latest_field() {
+        if (count($this->fields))
+            return $this->fields[count($this->fields) - 1];
+        else
+            return null;
+    }
+
+    /**
      * add taxonomy support
      * @param $tax_name string
      */
@@ -182,15 +230,26 @@ class JTL_CustomPostType {
         return $this->taxonomies;
     }
 
+    /**
+     * Create an object that represents a single post of this custom type
+     * Helps retrieve fields
+     */
+    public function instance($post_id) {
+        return new JTL_CustomPostInstance($post_id, $this, $this->field_map);
+    }
+
+
     public function setup_post_meta_box() {
-        if (! isset($this->box_name))
+        if (isset($this->box_name))
+            $box_name = $this->box_name;
+        else
             $box_name = $this->display_name . ' Fields';
 
         add_meta_box(
             $this->name . '_box',
             $box_name,
             array(&$this, 'draw_fields'),
-            $this->name,
+            $this->name, // post types to show this on
             'normal',
             'core'
         );
@@ -272,7 +331,6 @@ class JTL_CustomPostType {
         if ($this->was_registered)
             throw new Exception('this attribute cannot be modified after the post type has been registered');
     }
-
-
-
 }
+
+

@@ -27,11 +27,13 @@
  * Draws and saves custom fields for Wordpress custom post types
  * See JTL_CustomPostType for usage examples
  */
-class JTL_Field
+abstract class JTL_Field
 {
     public $name;
+    protected $parent;
+    protected $input_name;
 
-    public function Rectify_Post_Id($post_id = null) {
+    public static function Rectify_Post_Id($post_id = null) {
         if ($post_id === null) {
             global $the_post;
             if (isset($the_post))
@@ -43,9 +45,13 @@ class JTL_Field
         return $post_id;
     }
 
+    public function set_parent($parent) {
+        $this->parent = $parent;
+    }
 
     public function __construct($name) {
         $this->name = $name;
+        $this->input_name = esc_attr($this->name . '_input');
     }
 
 
@@ -100,6 +106,10 @@ class JTL_Field
     protected function draw_footer($post) {
         echo "</p>\n";
     }
+
+
+    // HOOKS
+    public function register_hooks() {}
 }
 
 
@@ -108,7 +118,6 @@ class JTL_SimpleField extends JTL_Field{
 
     public function __construct($name) {
         parent::__construct($name);
-        $this->input_name = esc_attr($this->name . '_input');
     }
 
     protected function draw_label($post_id) {
@@ -189,7 +198,7 @@ class JTL_DateRange extends JTL_Field {
 }
 
 
-class JTL_HiddenField extends JTL_Field {
+class JTL_HiddenField extends JTL_SimpleField {
     protected function draw_fields($post_id) {
         $current_data = esc_attr($this->get($post_id));
         printf('<input type="hidden" id="%s" name="%s" value="%s" />',
@@ -198,72 +207,10 @@ class JTL_HiddenField extends JTL_Field {
                $current_data
         );
     }
-    protected  function draw_label($post_id) {} // do nothing: hidden field needs no label
+    protected function draw_label($post_id) {} // do nothing: hidden field needs no label
+    protected function draw_header($null) {}
+    protected function draw_footer($null) {}
 }
 
 
 
-class JTL_MediaAttatchment extends JTL_HiddenField {
-
-    public $button_id = "";
-
-    public function __construct($name) {
-        parent::__construct($name);
-        $this->button_id = $this->name . '_button';
-        add_action('admin_print_styles', array(&$this, 'enqueue_admin_styles'));
-        add_action('admin_print_scripts', array(&$this, 'enqueue_admin_scripts'));
-    }
-
-    public function enqueue_admin_scripts() {
-        wp_enqueue_script('media-upload');
-        wp_enqueue_script('thickbox');
-        wp_enqueue_script('jquery');
-    }
-
-    public function enqueue_admin_styles() {
-        wp_enqueue_style('thickbox');
-    }
-
-    protected function draw_label($post) {
-        // TODO draw a link to the current media
-    }
-
-    protected function draw_input($post_id) {
-        parent::draw_input($post_id); // hidden field printed
-        // TODO draw a "click to choose new image" button
-    }
-
-    protected  function draw_footer($post) {
-        // TODO print a script that shows the media box
-        ?>
-        <script type="text/javascript">
-            jQuery(function($){
-                "hello worst practices ahoy";
-                var field_id  = '<?php echo esc_attr($this->input_name); ?>';
-                var button_id = '<?php echo esc_attr($this->button_id); ?>';
-
-
-                $(button_id).release(function(e){
-                    e.preventDefault();
-                    tb_show("", "media-upload.php?type=image&TB_iframe=true");
-
-                    // this is the thickbox/media upload "choose" action
-                    // we will be swizzling it, so we need a reference to the original
-                    var _send_to_editor = window.send_to_editor;
-
-                    // showing the thing, time to swizzle
-                    window.send_to_editor = function(html) {
-                        var media_url = $('img', html).attr('src');
-                        $(field_id).val(media_url);
-                        tb_remove();
-
-                        // unswizzle
-                        window.send_to_editor = _send_to_editor;
-                    }
-                });
-            });
-        </script>
-        <?php
-        parent::draw_footer($post);
-    }
-}
