@@ -45,6 +45,20 @@ abstract class JTL_Field
         return $post_id;
     }
 
+    /**
+     * Check to see if the given field uses any of the unique names in names
+     * @static
+     * @param $names array
+     * @param $field JTL_Field
+     */
+    public static function Assert_No_Conflict($field, $names) {
+        foreach ($field->used_names() as $name) {
+            if (in_array($name, $names))
+                throw new Exception('Unique Name Error: field names conflict');
+        }
+    }
+
+
     public function set_parent($parent) {
         $this->parent = $parent;
     }
@@ -52,6 +66,14 @@ abstract class JTL_Field
     public function __construct($name) {
         $this->name = $name;
         $this->input_name = esc_attr($this->name . '_input');
+    }
+
+    /**
+     * Return an array of all the unique names this input uses
+     * @return array
+     */
+    public function used_names() {
+        return array($this->name);
     }
 
 
@@ -96,16 +118,13 @@ abstract class JTL_Field
      * Draw the static HTML section header for this field
      * @param $post
      */
-    protected  function draw_header($post) {
-        echo "<p>\n";
-    }
+    protected  function draw_header($post) {}
+
     /**
      * Draw the static HTML section footer for this field
      * @param $post
      */
-    protected function draw_footer($post) {
-        echo "</p>\n";
-    }
+    protected function draw_footer($post) {}
 
 
     // HOOKS
@@ -145,6 +164,14 @@ class JTL_SimpleField extends JTL_Field{
         $this->draw_input($post_id);
     }
 
+    protected function draw_header($post) {
+        echo "<p>\n";
+    }
+
+    protected function draw_footer($post) {
+        echo "</p>\n";
+    }
+
     public function save($post_id = null) {
        update_post_meta($post_id, $this->name, $_POST[esc_attr($this->input_name)]);
     }
@@ -162,6 +189,10 @@ class JTL_DateField extends JTL_SimpleField {
     }
 }
 
+/**
+ * A set of two JTL_DateField objects composed together to act as one input
+ * delegates the saving and loading of
+ */
 class JTL_DateRange extends JTL_Field {
     public function __construct($name) {
         parent::__construct($name);
@@ -187,12 +218,19 @@ class JTL_DateRange extends JTL_Field {
     protected function draw_header($post) {
         printf('<p><strong>%s</strong><br />', esc_attr($this->label));
     }
+    protected function draw_footer($post) {
+        echo "</p>\n";
+    }
 
     public function get($post_id = null) {
         return array(
             'start' => $this->start->get($post_id),
             'end' => $this->end->get($post_id)
         );
+    }
+
+    public function used_names() {
+        return array_merge($this->start->used_names(), $this->end->used_names());
     }
 
 }

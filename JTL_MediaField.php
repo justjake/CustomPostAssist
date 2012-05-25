@@ -18,6 +18,7 @@ class JTL_MediaField extends JTL_SimpleField {
     public function __construct($name) {
         parent::__construct($name);
         $this->button_id = $this->name . '_button';
+        $this->remove_id = $this->name . '_remove_media';
         $this->field_actual = new JTL_HiddenField($name);
         $this->input_name = $this->field_actual->input_name;
     }
@@ -43,9 +44,9 @@ class JTL_MediaField extends JTL_SimpleField {
 
         if ($value)
             printf(
-                '<a href="%s" title="Linked image">%s</a>',
+                '<a href="%s" target="_blank" class="button" title="Linked image">%s</a> ',
                 $value,
-                __('Current Media')
+                __('View Current Media')
             );
         else
             echo __("No media found");
@@ -53,15 +54,19 @@ class JTL_MediaField extends JTL_SimpleField {
 
     public function draw_input($post_id) {
         $this->field_actual->draw($post_id, true);
-        printf('<a class="thickbox" href="media-upload.php?post_id=%d&type=image&TB_iframe=true" id="%s">%s</a>',
+        printf('<a class="thickbox button" href="media-upload.php?post_id=%d&type=image&TB_iframe=true" id="%s">%s</a>',
             $post_id,
             $this->button_id,
             __('Choose Media')
         );
+        if ($this->get($post_id))
+            printf('<a class="button" href="#nope" id="%s">%s</a>',
+                $this->remove_id,
+                __('Remove Current Media')
+            );
     }
 
     protected  function draw_footer($post) {
-        // TODO print a script that shows the media box
         $post_id = JTL_Field::Rectify_Post_Id($post);
         if (! $post_id) $post_id = 0;
         ?>
@@ -70,12 +75,15 @@ class JTL_MediaField extends JTL_SimpleField {
             "hello worst practices ahoy";
             var field_id  = '#<?php echo esc_attr($this->input_name); ?>';
             var button_id = '#<?php echo esc_attr($this->button_id); ?>';
-
+            var remove_id = '#<?php echo esc_attr($this->remove_id); ?>';
+            $(remove_id).click(function(e){
+                e.preventDefault();
+                $(field_id).val('');
+            })
 
             $(button_id).click(function(e){
                 e.preventDefault();
-                console.log('HERP HERP DERP BUTTAN REPLEADF')
-                tb_show("", "media-upload.php?post_id=<?php echo $post_id ?>&type=image&TB_iframe=true&");
+                tb_show("", "media-upload.php?post_id=<?php echo $post_id ?>&TB_iframe=true");
 
                 // this is the thickbox/media upload "choose" action
                 // we will be swizzling it, so we need a reference to the original
@@ -83,15 +91,13 @@ class JTL_MediaField extends JTL_SimpleField {
 
                 // showing the thing, time to swizzle
                 window.send_to_editor = function(html) {
-                    var media_url = $('img', html).attr('src');
+                    var media_url = $('a', html).attr('href');
                     $(field_id).val(media_url);
                     tb_remove();
-                    console.log('tried to insert into derp');
 
                     // unswizzle
                     window.send_to_editor = _send_to_editor;
                 }
-                return false;
             });
         });
     </script>
