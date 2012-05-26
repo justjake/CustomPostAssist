@@ -38,28 +38,38 @@ class JTL_MediaField extends JTL_SimpleField {
         wp_enqueue_style('thickbox');
     }
 
-    protected function draw_label($post) {
-        $post_id = JTL_Field::Rectify_Post_Id($post);
-        $value = $this->get($post_id);
+    protected function draw_label() {}
 
-        if ($value)
+    public function draw($post_id = null, $no_wrapper = false) {
+        $post_id = JTL_Field::Rectify_Post_Id($post_id);
+        $data = $this->get($post_id);
+
+        // draw a hidden field that will actually store our data
+        $this->field_actual->draw($post_id, true);
+
+        if (! $no_wrapper) $this->draw_header();
+        $this->draw_fields_with_data($data);
+        if (! $no_wrapper) $this->draw_footer();
+    }
+
+    public function draw_input($data) {
+        // print label
+        if ($data)
             printf(
                 '<a href="%s" target="_blank" class="button" title="Linked image">%s</a> ',
-                $value,
+                $data,
                 __('View Current Media')
             );
         else
             echo __("No media found");
-    }
 
-    public function draw_input($post_id) {
-        $this->field_actual->draw($post_id, true);
+
         printf('<a class="thickbox button" href="media-upload.php?post_id=%d&type=image&TB_iframe=true" id="%s">%s</a>',
             $post_id,
             $this->button_id,
             __('Choose Media')
         );
-        if ($this->get($post_id))
+        if ($data)
             printf('<a class="button" href="#nope" id="%s">%s</a>',
                 $this->remove_id,
                 __('Remove Current Media')
@@ -102,11 +112,11 @@ class JTL_MediaField extends JTL_SimpleField {
         });
     </script>
     <?php
-        parent::draw_footer($post);
+        parent::draw_footer();
     }
 
     public function save($post_id = null) {
-        $this->field_actual->save($post_id);
+        $this->field_actual->save($post_id, $this->field_actual->data_from_submission());
     }
 
     public function get($post_id = null) {
