@@ -42,30 +42,43 @@
  *
  */
 
-class JTL_CustomPostType {
+/**
+ * abstract class to hold post feature defenitions
+ */
+abstract class JTL_PostFeature {
+    const Title = 'title';
+    const Editor = 'editor';
+    const Author = 'author';
+    const Thumbnails = 'thumbnail';
+    const Excerpt = 'excerpt';
+    const Trackbacks = 'trackbacks';
+    const Comments = 'comments';
+    const Revisions = 'revisions';
+    const Page_Attributes = 'page-attributes';
+    const Post_Formats = 'post-formats';
+
     public static $All_Features = array(
-        'title',
-        'editor',
-        'author',
-        'thumbnail',
-        'excerpt',
-        'trackbacks',
-        'custom-fields',
-        'comments',
-        'revisions',
-        'page-attributes',
-        'post-formats'
+        JTL_PostFeature::Title,
+        JTL_PostFeature::Editor,
+        JTL_PostFeature::Author,
+        JTL_PostFeature::Thumbnails,
+        JTL_PostFeature::Excerpt,
+        JTL_PostFeature::Trackbacks,
+        JTL_PostFeature::Comments,
+        JTL_PostFeature::Revisions,
+        JTL_PostFeature::Page_Attributes,
+        JTL_PostFeature::Post_Formats
     );
 
     public static $Basic_Features = array(
-        'title',
-        'editor',
-        'thumbnail',
-        'excerpt',
-        'revisions'
+        JTL_PostFeature::Title,
+        JTL_PostFeature::Editor,
+        JTL_PostFeature::Thumbnails,
+        JTL_PostFeature::Revisions
     );
+}
 
-
+class JTL_CustomPostType {
     /**
      * @var string post type name for use in Wordpress
      */
@@ -234,8 +247,15 @@ class JTL_CustomPostType {
      * Create an object that represents a single post of this custom type
      * Helps retrieve fields
      */
-    public function instance($post_id) {
+    public function instance($post_id = null) {
+        $post_id = JTL_Field::Rectify_Post_Id($post_id);
         return new JTL_CustomPostInstance($post_id, $this, $this->field_map);
+    }
+
+    public function post_is_instance($post_id = null) {
+        $post_id = JTL_Field::Rectify_Post_Id($post_id);
+        $post = get_post($post_id);
+        return $post->post_type == $this->name;
     }
 
 
@@ -293,7 +313,7 @@ class JTL_CustomPostType {
 
         // Authentication successful. We can now save the post data
         for ($i = 0; $i < count($this->fields); $i ++) {
-            $this->fields[$i]->save($post_id);
+            $this->fields[$i]->save($post_id, $this->fields[$i]->data_from_submission());
         }
     }
 

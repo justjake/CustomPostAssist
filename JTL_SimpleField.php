@@ -7,12 +7,10 @@
  * To change this template use File | Settings | File Templates.
  */
 
+require_once 'JTL_Field.php';
+
 class JTL_SimpleField extends JTL_Field{
     public $label = 'Simple Form Field';
-
-    public function __construct($name) {
-        parent::__construct($name);
-    }
 
     protected function draw_label() {
         ?><label for="<?php echo $this->input_name ?>">

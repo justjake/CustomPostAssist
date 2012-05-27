@@ -20,6 +20,7 @@
  * @package CustomPostAssist
  */
 
+
 /**
  * JTL_Field.php
  *
@@ -27,9 +28,56 @@
  * Draws and saves custom fields for Wordpress custom post types
  * See JTL_CustomPostType for usage examples
  */
-abstract class JTL_Field
+
+interface JTL_PostField {
+    /**
+     * return the value of this field
+     * @param $post_id int
+     */
+    public function get($post_id);
+
+    /**
+     * Draw the form fields and associated HTML content for this field
+     * @param $post
+     * @param $no_wrapper bool Whether or not to print the header and footer for the field form
+     */
+    public function draw($post, $no_wrapper = false);
+
+    /**
+     * Create data representation from posted form information.
+     * Should be used by $this->save to
+     * @param mixed $existing_data the currently existing PHP data of this field
+     * @return mixed
+     */
+    public function data_from_submission();
+
+    /**
+     * Save the form data. Security is handled by JTL_CustomPostType::save_fields
+     * @param int $post_id
+     * @param mixed $data
+     */
+    public function save($post_id, $data);
+
+    /**
+     * set up any Wordpress actions, filters, or hooks that this field will need.
+     * @see JTL_CustomPostType::register()
+     * @abstract
+     * @return mixed
+     */
+    public function register_hooks();
+}
+
+abstract class JTL_Field implements JTL_PostField
 {
+    /**
+     * @var string
+     */
     public $name;
+    /**
+     * @var string
+     */
+    public $label;
+
     protected $parent;
     protected $input_name;
 
@@ -68,9 +116,16 @@ abstract class JTL_Field
         }
     }
 
+    /**
+     * Create a new field with the given name, which will be used as the basis
+     * of both the default field label, and the field input ID and NAME attributes.
+     * As such, field names must be unique.
+     * @param $name string
+     */
     public function __construct($name) {
         $this->name = $name;
         $this->input_name = esc_attr($this->name . '_input');
+        $this->label = ucwords(str_replace('_', ' ', $this->name));
     }
 
     public function set_parent($parent) {
@@ -90,29 +145,20 @@ abstract class JTL_Field
 
     // RETRIEVAL /////////////////////////////////
 
-    /**
-     * return the value of this field
-     * @param $post_id int
-     */
     public function get($post_id) {
-        $post_id = JTL_Field::Rectify_Post_Id($post_id);
         return get_post_meta($post_id, $this->name, true);
     }
 
     /**
      * Print a suitable displayable output for this field
      */
-    public function display($post_id = null) {
+    public function display($post_id) {
         echo $this->get($post_id);
     }
 
     // ADMIN UI /////////////////////////////////
 
-    /**
-     * Draw the form fields and associated HTML content for this field
-     * @param $post
-     */
-    public function draw($post = null, $no_wrapper = false) {
+    public function draw($post, $no_wrapper = false) {
         $post_id = JTL_Field::Rectify_Post_Id($post);
         $data = $this->get($post_id);
 
@@ -132,7 +178,7 @@ abstract class JTL_Field
      * Draw the HTML section header for this field
      * @param $post
      */
-    protected  function draw_header() {}
+    protected function draw_header() {}
 
     /**
      * Draw the HTML section footer for this field
@@ -143,21 +189,9 @@ abstract class JTL_Field
 
     // POST & SAVE  /////////////////////////////////
 
-    /**
-     * Save the form data. Security is handled by JTL_CustomPostType::save_fields
-     * @param int $post_id
-     */
     public function save($post_id, $data) {
         update_post_meta($post_id, $this->name, $data);
     }
-
-    /**
-     * Create data representation from posted form information.
-     * Should be used by $this->save to
-     * @param mixed $existing_data the currently existing PHP data of this field
-     * @return mixed
-     */
-    public function data_from_submission() {}
 
     // HOOKS
     public function register_hooks() {}

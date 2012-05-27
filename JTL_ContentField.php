@@ -4,6 +4,8 @@
  * Editable with the GUI editor
  */
 
+require_once 'JTL_SimpleField.php';
+
 class JTL_ContentField extends JTL_SimpleField {
     function draw_fields($post = null) {
         $post_id = JTL_Field::Rectify_Post_Id($post);

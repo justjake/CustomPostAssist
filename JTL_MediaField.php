@@ -7,6 +7,8 @@
  * To change this template use File | Settings | File Templates.
  */
 
+require_once 'JTL_SimpleField.php';
+
 /**
  * Media select field from Wordpress's built-in Media library
  */

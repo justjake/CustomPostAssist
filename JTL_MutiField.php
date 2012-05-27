@@ -1,4 +1,7 @@
 <?php
+
+require_once 'JTL_Field.php';
+
 class JTL_MutiField extends JTL_Field {
 
     /**
