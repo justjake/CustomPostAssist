@@ -37,6 +37,14 @@ interface JTL_PostField {
     public function get($post_id);
 
     /**
+     * display an HTML representation of this field's data
+     * @abstract
+     * @param $post_id int
+     * @return null
+     */
+    public function display($post_id);
+
+    /**
      * Draw the form fields and associated HTML content for this field
      * @param $post
      * @param $no_wrapper bool Whether or not to print the header and footer for the field form
@@ -149,12 +157,6 @@ abstract class JTL_Field implements JTL_PostField
         return get_post_meta($post_id, $this->name, true);
     }
 
-    /**
-     * Print a suitable displayable output for this field
-     */
-    public function display($post_id) {
-        echo $this->get($post_id);
-    }
 
     // ADMIN UI /////////////////////////////////
 

@@ -47,6 +47,10 @@ class JTL_SimpleField extends JTL_Field{
             return $_POST[$this->input_name];
         return "";
     }
+
+    public function display($post_id) {
+        echo $this->get($post_id);
+    }
 }
 
 

@@ -8,6 +8,7 @@
  */
 
 require_once 'JTL_SimpleField.php';
+require_once 'JTL_CompositeField.php';
 
 
 class JTL_DateField extends JTL_SimpleField {
@@ -22,51 +23,30 @@ class JTL_DateField extends JTL_SimpleField {
     }
 }
 
-class JTL_DateRange extends JTL_Field{
-    private $range_start;
-    private $range_end;
+class JTL_DateRange extends JTL_CompositeField {
+    protected $subfields = array(
+        'range_start' => null,
+        'range_end' => null
+    );
 
-    /**
-     * Sets the label of this input element
-     * @param $label string
-     */
-    public function set_label($label) {
-        $label = parent::set_label($label);
-        $this->range_start->label = $label . ' start';
-        $this->range_end->label = $label . ' end';
+    protected function subfield_init($role) {
+        return new JTL_DateField($this->name . '_' . $role);
     }
 
-    public function __construct($name) {
-        parent::__construct($name);
-        $this->range_end = new JTL_DateField($this->name . '_end');
-        $this->range_start = new JTL_DateField($this->name . '_start');
-
-        $this->set_label($this->label);
+    protected function subfield_label($role, $label) {
+        switch ($role) {
+            case 'range_start':
+                return $label . ' began';
+            case 'range_end':
+                return $label . ' ended';
+        }
     }
 
-    public function save($post_id, $data) {
-        $this->range_start->save($post_id, $data['start']);
-        $this->range_end->save($post_id, $data['end']);
-    }
-
-    public function data_from_submission() {
-        return array(
-            'start' => $this->range_start->data_from_submission(),
-            'end' => $this->range_end->data_from_submission()
-        );
-    }
-
-    public function draw($post = null, $no_wrapper = false) {
-        if (! $no_wrapper) $this->draw_header();
-        $this->range_start->draw($post);
-        $this->range_end->draw($post);
-        if (! $no_wrapper) $this->draw_footer();
-    }
-
-    public function get($post_id) {
-        return array(
-            'start' => $this->range_start->get($post_id),
-            'end' => $this->range_end->get($post_id)
+    public function display($post_id) {
+        $data = $this->get($post_id);
+        printf('%s - %s',
+            $data['range_start'],
+            $data['range_end']
         );
     }
 }
